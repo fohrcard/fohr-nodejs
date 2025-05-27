@@ -41,13 +41,6 @@ app.use(function (req, res, next) {
 app.get("/contracts", async (req, res) => {
   const participantId = parseInt(req.query.participantId);
 
-  console.log(
-    "Query",
-    req.query,
-    participantId,
-    Contracts.getContracts(participantId)
-  );
-
   const contract = Contracts.getContracts(participantId)[0];
 
   if (!contract) {
@@ -58,30 +51,16 @@ app.get("/contracts", async (req, res) => {
 
   const { agreementId } = contract;
 
-  console.log("Agreement", agreementId, contract);
-
   const agreement = await AdobeSign.getAgreement(agreementId);
 
   res.json({ ...contract, agreement });
 });
 
-app.post("/update-contract", async (req, res) => {
-  try {
-    const { status, participantId } = req.body;
-
-    Contracts.updateContract(participantId, status);
-
-    res.status(200).json();
-  } catch (error) {
-    console.error("Error uploading file:", error);
-    res.status(500).json({ error: "Failed to upload file" });
-  }
-});
-
 // Route to handle file upload
 app.post("/upload-contract", async (req, res) => {
   try {
-    const { documentUrl, participantName, participantId } = req.body;
+    const { documentUrl, participantName, participantId, campaignId } =
+      req.body;
 
     const docId = await GoogleDrive.createGoogleDoc(
       documentUrl,
@@ -91,11 +70,36 @@ app.post("/upload-contract", async (req, res) => {
 
     const docUrl = `https://docs.google.com/document/d/${docId}/edit`;
 
-    //  Contracts.addOrReplaceContract(docUrl, docId, participantId);
+    Contracts.addOrReplaceContract({
+      docUrl,
+      docId,
+      participantId,
+      campaignId,
+    });
 
     res
       .status(200)
       .json({ message: "Google Doc created successfully", docUrl });
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    res.status(500).json({ error: "Failed to upload file" });
+  }
+});
+
+// Mark a contract ready for review by Fohr
+app.post("/update-contract", async (req, res) => {
+  try {
+    const { participantId, status } = req.body;
+
+    if (status === "PENDING_FOHR_TO_INITIATE_SIGNATURES") {
+      // This status means that the influencer has marked a contract as ready to review by Fohr.
+      // Send notification to Campaign manager and contracts@fohr.co
+      // Fohr is the one that initiates signatures. The influencer can only mark the contract as final from their side
+    }
+
+    Contracts.updateContract(participantId, { status });
+
+    res.status(200).send();
   } catch (error) {
     console.error("Error uploading file:", error);
     res.status(500).json({ error: "Failed to upload file" });
@@ -116,7 +120,7 @@ app.post("/upload-contract-for-signature", async (req, res) => {
 
     fs.unlinkSync(pdfPath);
 
-    const status = "pending_signatures";
+    const status = "OUT_FOR_SIGNATURE";
 
     const updates = { agreementId, status };
 

@@ -25,14 +25,16 @@ const getContracts = (participantId) => {
   );
 };
 
-const addOrReplaceContract = (docUrl, docId, participantId) => {
+const addOrReplaceContract = (params) => {
+  const { participantId } = params;
+
   let CONTRACTS = getContractsFromDisk();
 
   CONTRACTS = CONTRACTS.filter(
     (contract) => contract.participantId !== participantId
   );
 
-  CONTRACTS.push({ docUrl, docId, participantId, status: "pending_changes" });
+  CONTRACTS.push({ ...params, status: null });
 
   const jsonString = JSON.stringify({ contracts: CONTRACTS }, null, 2);
 

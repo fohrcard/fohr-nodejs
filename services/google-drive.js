@@ -24,6 +24,33 @@ const FOLDER_ID = "1R9Y37hihzGgEw03cPl1FX7awO3dt6ewn";
 // Helper function to set document margins
 const setDocumentMargins = async (documentId) => {
   try {
+    // First get the document content to determine the correct range
+    const document = await docs.documents.get({
+      documentId: documentId,
+    });
+
+    // Get the last index of the document content
+    const lastIndex =
+      document.data.body.content[document.data.body.content.length - 1]
+        .endIndex;
+
+    // Find all bold text ranges
+    const boldRanges = [];
+    const processElement = (element) => {
+      if (element.paragraph && element.paragraph.elements) {
+        element.paragraph.elements.forEach((el) => {
+          if (el.textRun && el.textRun.textStyle && el.textRun.textStyle.bold) {
+            boldRanges.push({
+              startIndex: el.startIndex,
+              endIndex: el.endIndex,
+            });
+          }
+        });
+      }
+    };
+
+    document.data.body.content.forEach(processElement);
+
     const requests = [
       {
         updateDocumentStyle: {
@@ -40,7 +67,7 @@ const setDocumentMargins = async (documentId) => {
         updateParagraphStyle: {
           range: {
             startIndex: 1,
-            endIndex: 1,
+            endIndex: lastIndex,
           },
           paragraphStyle: {
             lineSpacing: 100,
@@ -52,6 +79,51 @@ const setDocumentMargins = async (documentId) => {
       },
     ];
 
+    // Add text style updates for non-bold text
+    requests.push({
+      updateTextStyle: {
+        range: {
+          startIndex: 1,
+          endIndex: lastIndex,
+        },
+        textStyle: {
+          fontSize: {
+            magnitude: 10,
+            unit: "PT",
+          },
+          weightedFontFamily: {
+            fontFamily: "Arial",
+            weight: 400,
+          },
+        },
+        fields: "fontSize,weightedFontFamily",
+      },
+    });
+
+    // Add text style updates for bold text ranges
+    boldRanges.forEach((range) => {
+      requests.push({
+        updateTextStyle: {
+          range: {
+            startIndex: range.startIndex,
+            endIndex: range.endIndex,
+          },
+          textStyle: {
+            fontSize: {
+              magnitude: 10,
+              unit: "PT",
+            },
+            weightedFontFamily: {
+              fontFamily: "Arial",
+              weight: 700,
+            },
+            bold: true,
+          },
+          fields: "fontSize,weightedFontFamily,bold",
+        },
+      });
+    });
+
     await docs.documents.batchUpdate({
       documentId: documentId,
       requestBody: { requests },
@@ -61,7 +133,48 @@ const setDocumentMargins = async (documentId) => {
   }
 };
 
-// Helper function to create a Google Doc from DOCX
+const setDocumentPermissions = async (fileId) => {
+  try {
+    // First, remove all existing permissions except owner
+    const existingPermissions = await drive.permissions.list({
+      fileId: fileId,
+      fields: "permissions(id,emailAddress,role)",
+    });
+
+    for (const permission of existingPermissions.data.permissions) {
+      // Skip owner and anyoneWithLink permissions
+      if (permission.id !== "anyoneWithLink" && permission.role !== "owner") {
+        await drive.permissions.delete({
+          fileId: fileId,
+          permissionId: permission.id,
+        });
+      }
+    }
+
+    // Add domain-wide permission for @fohr.co with editor role
+    await drive.permissions.create({
+      fileId: fileId,
+      requestBody: {
+        role: "writer",
+        type: "domain",
+        domain: "fohr.co",
+      },
+    });
+
+    // Set the document to be accessible to anyone with the link as commenter
+    await drive.permissions.create({
+      fileId: fileId,
+      requestBody: {
+        role: "commenter",
+        type: "anyone",
+      },
+    });
+  } catch (error) {
+    console.error("Error setting document permissions:", error);
+    throw error;
+  }
+};
+
 const createGoogleDoc = async (docxUrl, participantName) => {
   try {
     const response = await axios({
@@ -103,12 +216,13 @@ const createGoogleDoc = async (docxUrl, participantName) => {
       name
     );
 
-    console.log("Google Doc Response", googleDocResponse);
-
     const docId = googleDocResponse.id;
 
     // Set document margins after creation
     await setDocumentMargins(docId);
+
+    // Set document permissions
+    await setDocumentPermissions(docId);
 
     return docId;
   } catch (error) {
@@ -128,22 +242,18 @@ async function convertToGoogleDoc(docxFileId, name) {
       fields: "id",
     });
 
-    console.log("Converted Google Doc File ID:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error converting to Google Doc:", error.message);
-    // throw error;
   }
 }
 
 const exportDocToPdf = async (docId) => {
-  const googleDocId = await convertToGoogleDoc(docId);
-
-  await removeAnchorTag(googleDocId);
+  await removeAnchorTag(docId);
 
   const res = await drive.files.export(
     {
-      fileId: googleDocId,
+      fileId: docId,
       mimeType: "application/pdf",
     },
     { responseType: "stream" }
@@ -175,8 +285,6 @@ async function removeAnchorTag(documentId) {
       documentId,
     });
 
-    console.log("Removing anchor tag for document");
-
     // 2. Find the text element containing "<a>Accept changes</a>"
     const content = document.data;
     let startIndex = null;
@@ -188,11 +296,6 @@ async function removeAnchorTag(documentId) {
     content.body.content.slice(0, 5).forEach((element) => {
       if (element.paragraph && element.paragraph.elements) {
         element.paragraph.elements.forEach((el) => {
-          console.log(
-            "Element",
-            el.textRun,
-            el.textRun.content.includes(textToSearch)
-          );
           if (el.textRun && el.textRun.content.includes(textToSearch)) {
             startIndex = el.startIndex;
             endIndex = startIndex + textToSearch.length;
@@ -235,3 +338,4 @@ async function removeAnchorTag(documentId) {
 exports.createGoogleDoc = createGoogleDoc;
 exports.exportDocToPdf = exportDocToPdf;
 exports.removeAnchorTag = removeAnchorTag;
+exports.setDocumentPermissions = setDocumentPermissions;

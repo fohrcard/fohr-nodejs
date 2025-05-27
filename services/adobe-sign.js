@@ -80,10 +80,18 @@ async function sendForSignature(pdfPath) {
       name: "Agreement to be signed",
       participantSetsInfo: [
         {
-          memberInfos: [{ email: "mihovil@fohr.co" }], // Replace with recipient's email
+          // We have to set the participant's email here. We have that info from the participant ID belonging to the contract
+          memberInfos: [{ email: "mihovil@fohr.co" }], // Recipient's email
           order: 1,
           role: "SIGNER",
           name: "signer_one",
+        },
+        {
+          // This should be a Fohr email used to sign the contract. Potentially contracts@fohr.co
+          memberInfos: [{ email: "airmiha@gmail.com" }], // Sender's email
+          order: 2,
+          role: "SIGNER",
+          name: "signer_two",
         },
       ],
       signatureType: "ESIGN",
@@ -198,7 +206,7 @@ const getAgreement = async (agreementId) => {
 
     return { ...response.data, agreement };
   } catch (e) {
-    console.error("Error fetching agreement", e);
+    console.error("Error fetching agreement");
     return null;
   }
 };
