@@ -206,7 +206,7 @@ const getAgreement = async (agreementId) => {
 
     return { ...response.data, agreement };
   } catch (e) {
-    console.error("Error fetching agreement");
+    console.error("Error fetching agreement", e);
     return null;
   }
 };
