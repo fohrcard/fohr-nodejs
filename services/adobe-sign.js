@@ -81,14 +81,14 @@ async function sendForSignature(pdfPath) {
       participantSetsInfo: [
         {
           // We have to set the participant's email here. We have that info from the participant ID belonging to the contract
-          memberInfos: [{ email: "mihovil@fohr.co" }], // Recipient's email
+          memberInfos: [{ email: "giuliana@fohr.co" }], // Recipient's email
           order: 1,
           role: "SIGNER",
           name: "signer_one",
         },
         {
           // This should be a Fohr email used to sign the contract. Potentially contracts@fohr.co
-          memberInfos: [{ email: "airmiha@gmail.com" }], // Sender's email
+          memberInfos: [{ email: "giuliana@fohr.co" }], // Sender's email
           order: 2,
           role: "SIGNER",
           name: "signer_two",
