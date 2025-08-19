@@ -142,6 +142,14 @@ app.post("/send-for-signature", async (req, res) => {
   res.json(result);
 });
 
+app.post("/clear-pending-contract", async (req, res) => {
+  const { participantId } = req.body;
+
+  Contracts.deleteContract(participantId);
+
+  res.json();
+});
+
 app.post("/remove-anchor-tag", async (req, res) => {
   const result = await GoogleDrive.removeAnchorTag(
     "1eQrfNYD9ffc4XH3eHJcKYne6TZlqkmCa"
