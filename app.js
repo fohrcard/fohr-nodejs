@@ -15,6 +15,9 @@ const ExportService = require("./services/export-to-pdf");
 const Contracts = require("./services/contracts");
 const GoogleDrive = require("./services/google-drive");
 
+// Import route modules
+const stripeRoutes = require("./routes/stripe");
+
 const app = express();
 
 // view engine setup
@@ -39,6 +42,9 @@ app.use(function (req, res, next) {
   );
   next();
 });
+
+// Use route modules
+app.use("/stripe", stripeRoutes);
 
 app.get("/contracts", async (req, res) => {
   const participantId = parseInt(req.query.participantId);
