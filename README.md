@@ -413,10 +413,4 @@ The system includes comprehensive logging and error handling:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
----
-
 **Built with ❤️ for the Fohr platform**
-
-```
-
-```
