@@ -1,0 +1,21 @@
+{
+  "brands": [
+    {
+      "id": 1,
+      "name": "Mihovil Inc.",
+      "country": "US",
+      "email": "fohr@fohr.co",
+      "accountId": "acct_1SCRB0R4XjeO0Lmb",
+      "disconnectedBy": null,
+      "disconnectedOn": null
+    }
+  ],
+  "creators": [
+    {
+      "accountId": "acct_1SCQOlJDaVt8udjN",
+      "disconnectedBy": null,
+      "disconnectedOn": null,
+      "email": "airmiha+influencer@gmail.com"
+    }
+  ]
+}

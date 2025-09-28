@@ -8,12 +8,17 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const fs = require("fs");
 
+require("dotenv/config");
+
 const http = require("http");
 
 const AdobeSign = require("./services/adobe-sign");
 const ExportService = require("./services/export-to-pdf");
 const Contracts = require("./services/contracts");
 const GoogleDrive = require("./services/google-drive");
+
+// Import route modules
+const stripeRoutes = require("./routes/stripe");
 
 const app = express();
 
@@ -39,6 +44,9 @@ app.use(function (req, res, next) {
   );
   next();
 });
+
+// Use route modules
+app.use("/stripe", stripeRoutes);
 
 app.get("/contracts", async (req, res) => {
   const participantId = parseInt(req.query.participantId);
@@ -140,6 +148,14 @@ app.post("/send-for-signature", async (req, res) => {
   const result = await AdobeSign.registerWebhook();
 
   res.json(result);
+});
+
+app.post("/clear-pending-contract", async (req, res) => {
+  const { participantId } = req.body;
+
+  Contracts.deleteContract(participantId);
+
+  res.json();
 });
 
 app.post("/remove-anchor-tag", async (req, res) => {

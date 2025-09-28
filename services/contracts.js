@@ -60,6 +60,19 @@ const updateContract = (participantId, updates) => {
   fs.writeFileSync(path.join(__dirname, "contracts.json"), jsonString);
 };
 
+const deleteContract = (participantId) => {
+  const CONTRACTS = getContractsFromDisk();
+
+  const updatedContracts = CONTRACTS.filter(
+    (contract) => contract.participantId !== participantId
+  );
+
+  const jsonString = JSON.stringify({ contracts: updatedContracts }, null, 2);
+
+  fs.writeFileSync(path.join(__dirname, "contracts.json"), jsonString);
+};
+
 exports.getContracts = getContracts;
 exports.addOrReplaceContract = addOrReplaceContract;
 exports.updateContract = updateContract;
+exports.deleteContract = deleteContract;

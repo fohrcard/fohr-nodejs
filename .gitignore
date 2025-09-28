@@ -2,3 +2,5 @@ node_modules/
 temp.docx
 .DS_Store
 www
+
+.env
